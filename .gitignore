@@ -1,0 +1,39 @@
+*.egg-info
+*.pyc
+*.so
+venv
+.venv*
+.env
+.coverage*
+.direnv
+.envrc
+.hypothesis
+.mypy_cache
+.pytest_cache
+MANIFEST
+__pycache__
+build
+dist
+
+*.log
+*.prof
+
+# Nuitka's stuff..
+*.bin
+*.dist
+*.build
+*.onefile-build
+
+trash*
+delme*
+
+# Bot's stuff..
+*.db
+
+*.sublime-project
+*.sublime-workspace
+
+test.py
+
+# ./*.html
+
