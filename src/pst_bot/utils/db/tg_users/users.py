@@ -9,8 +9,7 @@ from utils.db.crud_queries import (
 	query_count__users__users_ids,
 )
 from utils.db.cruds import DBApp
-
-from .tables import UsersTable
+from utils.db.tables import UsersTable
 
 if TYPE_CHECKING:
 	from sqlalchemy import Column

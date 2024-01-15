@@ -3,6 +3,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from sqlalchemy import select, text
+
 from .crud_queries import query__apps_tickets__app_url
 from .cruds import DBApp
 from .tables import AppsTicketsTable
@@ -11,6 +13,7 @@ if TYPE_CHECKING:
 	from typing import Any, Literal
 
 	from sqlalchemy.ext.asyncio import AsyncSession
+	from sqlalchemy.sql.selectable import Select
 
 logger = logging.getLogger('bot')  # FIXME: Rename to ORM or DB or etc. & Manage loggers!!!
 
@@ -30,6 +33,7 @@ class DBAppsInteract(DBApp):
 	) -> bool:
 		# TODO: Do it other way.. (check using regex..)
 		# FIXME: Duplicating..
+		# FIXME: Remove stupid things..
 		query_app_url = query__apps_tickets__app_url.where(AppsTicketsTable.app_url == app_url)
 		fetch: int | None = await self.db._session_execute_fetch_one_or_none(session, query_app_url)
 		del query_app_url
@@ -41,7 +45,6 @@ class DBAppsInteract(DBApp):
 		return False
 
 
-	##
 	async def add_ticket(
 		self: DBAppsInteract,
 		by_dev_id: int,
@@ -51,10 +54,10 @@ class DBAppsInteract(DBApp):
 		description: str,
 		app_url: str,
 
-		response_period: str = '-',
+		dev_response_period: str = '-',
 	) -> bool:
 		try:
-			ticket = AppsTicketsTable(
+			new_ticket = AppsTicketsTable(
 				by_dev_id=by_dev_id,
 				by_dev_username=by_dev_username,
 
@@ -62,23 +65,24 @@ class DBAppsInteract(DBApp):
 				description=description,
 				app_url=app_url,
 
-				response_period=response_period,
+				dev_response_period=dev_response_period,
 			)
 
 			async with self.db._session_factory() as session:
-				# mb I can do this without list?
-				if self._is_ticket_url_exist(session, app_url):
+				if await self._is_ticket_url_exist(session, app_url):
 					msg = 'Looks like %s already exists in db..'
 					raise TicketDuplicationError(msg % app_url)
 
-				session.add(ticket)
+				session.add(new_ticket)
 
 				await session.flush()
 				await session.commit()
 
+				await session.refresh(new_ticket)
+
 				logger.info(
-					'Ticket id#%i `%s` added by dev `%i`/`%s` ADDED',
-					ticket.id, app_name, by_dev_id, by_dev_username,
+					'New Ticket id#%i `%s` added by dev `%i`/`%s` ADDED',
+					new_ticket.id, app_name, by_dev_id, by_dev_username,
 				)
 
 				return True
@@ -87,40 +91,49 @@ class DBAppsInteract(DBApp):
 			raise
 
 		except Exception:
-			logger.exception('Ticket add with data `%s` failed!', ticket)
+			logger.exception('Ticket add with data `%s` failed!', new_ticket)
 			return False
 
 
 	def sess_find_ticket_by(
 		self: DBAppsInteract,
-		session: AsyncSession,
 		search_properties: dict[str, Any],
-	) -> AppsTicketsTable:
+	) -> Select:
 		"""Find and return ticket using column names as keys & values as data (doesn't fetch!).
 
 		```python
-		async with db.db._session_factory() as session:
+		async with db._session_factory() as session:
 			ticket = await db.apps.sess_find_ticket_by(session).first()
 			print(ticket)
 		```
 		"""
 		# TODO: Give the way to use tuple with ORM query conditions/parts..
-		try:
-			ticket = session.add(AppsTicketsTable).filter(
-				getattr(AppsTicketsTable, column) == value
-				for column, value in search_properties.items()
-			)
+		return select(AppsTicketsTable)\
+		.filter_by(**search_properties)
 
-			logger.info(
-				'Ticket id#%i `%s` added by dev `%i`/`%s` FOUND',
-				ticket.id, ticket.app_name, ticket.by_dev_id, ticket.by_dev_username,
-			)
+
+	async def get_ticket_by(
+		self: DBAppsInteract,
+		search_properties: dict[str, Any],
+	) -> AppsTicketsTable:
+		try:
+			async with self.db._session_factory() as session:
+
+				ticket_query = self.sess_find_ticket_by(search_properties)
+
+				ret = await session.execute(ticket_query)
+				ticket = ret.fetchone()[0]
+
+				logger.info(
+					'Ticket id#%i `%s` added by dev `%i`/`%s` GOT..',
+					ticket.id, ticket.app_name, ticket.by_dev_id, ticket.by_dev_username,
+				)
+
+				return ticket
 
 		except Exception:
-			logger.exception('Ticket search with data `%s` failed!', ticket)
+			logger.exception('Ticket GOT with data `%s` failed!', ticket)
 			raise
-		else:
-			return ticket
 
 
 	async def update_ticket_by(
@@ -131,7 +144,7 @@ class DBAppsInteract(DBApp):
 		try:
 			async with self.db._session_factory() as session:
 
-				ticket = self.sess_find_ticket_by(session, search_properties).first()
+				ticket = self.sess_find_ticket_by(search_properties).first()
 
 				for column, value in update_cols.items():
 					setattr(ticket, column, value)
@@ -158,7 +171,7 @@ class DBAppsInteract(DBApp):
 		try:
 			async with self.db._session_factory() as session:
 
-				ticket = self.sess_find_ticket_by(session, search_properties)
+				ticket = self.sess_find_ticket_by(search_properties)
 
 				ticket.delete()
 
@@ -179,9 +192,47 @@ class DBAppsInteract(DBApp):
 
 	async def testers_counter_action(
 		self: DBAppsInteract,
+		ticket_id: int,
 		action: Literal['+', '-'], num: int,
+		counter: Literal['active_testers_count', 'pending_testers_count'] = 'active_testers_count',
 	) -> bool:
-		...
+		if action not in ('+', '-') or counter in ('active_testers_count', 'pending_testers_count'):
+			raise ValueError
+
+		if not isinstance(ticket_id, int):
+			raise TypeError
+
+		try:
+			async with self.db._session_factory() as session:
+
+				query = text(
+					'UPDATE tickets SET :counter = :counter'
+					' '
+					':action :count_up'
+					' '
+					'WHERE id = :ticket_id RETURNING :counter'
+				)
+
+				ret = await session.execute(
+					query,
+					{
+						'ticket_id': ticket_id, 'count_up': num,
+						'action': action, 'counter': counter,
+					},
+				)
+				count = ret.fetchone()[0]  ##
+
+				# FIXME: Make pattern for such logs..
+				logger.info(
+					'Ticket id#%i COUNTER UPDATED to %i, now `%i`',
+					ticket_id, num, count,
+				)
+
+				return True
+
+		except Exception:
+			logger.exception('Ticket COUNTER UPDATE with ticket_id `%s` failed!', ticket_id)
+			return False
 
 
 	## TODO: Update ticket data (with skip & cancelling from bot side),

@@ -46,15 +46,13 @@ class DBTriggers(DBApp):
 		# FIXME: Crutch, but ok..
 		##
 		stmt = text(
-			(  # noqa: UP032
-				"CREATE TRIGGER apps_tickets_delete_trigger\n"
-				"AFTER DELETE\n"
-				"ON apps_tickets\n"
-				"BEGIN\n"
-				"	DELETE FROM apps_testers_data\n"
-				"	WHERE ticket_id = OLD.id;\n"
-				"END;"
-			),
+			'CREATE TRIGGER apps_tickets_delete_trigger\n'
+			'AFTER DELETE\n'
+			'ON apps_tickets\n'
+			'BEGIN\n'
+			'	DELETE FROM apps_testers_data\n'
+			'	WHERE ticket_id = OLD.id;\n'
+			'END;'
 		)
 
 		await session.execute(stmt)

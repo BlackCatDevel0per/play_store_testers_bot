@@ -55,7 +55,7 @@ class UsersChannelsSubscriptionsTable(Base):
 	channel_id = mapped_column(BigInteger(), nullable=False)
 
 
-# TODO: Profiles table..
+# TODO: Profiles table with options (aka options table)..
 
 
 # TODO: From users-side optionally hide some opts..
@@ -67,6 +67,11 @@ class AppsTicketsTable(Base):
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 	by_dev_id = mapped_column(BigInteger(), ForeignKey(UsersTable.user_id, ))  # TODO: Mb on user delete trigger in DB class..
 	by_dev_username = mapped_column(String(32), ForeignKey(UsersTable.username, ), default=None)
+
+	active_testers_count: Mapped[int] = mapped_column(default=0)
+
+	# TODO
+	pending_testers_count: Mapped[int] = mapped_column(default=0)
 
 	app_name: Mapped[ticket_field]
 	description: Mapped[ticket_big_field]

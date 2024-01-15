@@ -3,10 +3,9 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from tg_users import DBChannelsSubscriptions, DBTGBase
-
 from .apps_interact import DBAppsInteract
 from .cruds import ComfortCRUD
+from .tg_users import DBChannelsSubscriptions, DBTGBase
 from .triggers import DBTriggers
 
 if TYPE_CHECKING:

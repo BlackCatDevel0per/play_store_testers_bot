@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import delete, select
 
 from utils.db.cruds import DBApp
-
-from .tables import (
+from utils.db.tables import (
 	UsersChannelsSubscriptionsTable,
 )
 
@@ -107,7 +106,7 @@ class DBChannelsSubscriptions(DBApp):
 				UsersChannelsSubscriptionsTable.channel_id == channel_id,
 			)
 		)  ##
-		return bool(await self.db.tg_users._session_execute_fetch_one_or_none(session, query_user_channels))
+		return bool(await self.db._session_execute_fetch_one_or_none(session, query_user_channels))
 
 
 	####
