@@ -15,6 +15,18 @@ if TYPE_CHECKING:
 	from sqlalchemy.ext.asyncio import AsyncSession
 	from sqlalchemy.sql.selectable import Select
 
+	from .base import DB
+
+
+class DBApp:
+	"""Just helper class for main DB apps.
+
+	XD
+	"""
+
+	def __init__(self: DBApp, parent_base_ins: DB) -> None:
+		self.db = parent_base_ins
+
 
 class ComfortCRUD:
 	def __init__(self: ComfortCRUD, engine: str, pool_size=5, max_overflow=10) -> None:
@@ -28,7 +40,7 @@ class ComfortCRUD:
 				engine,
 				# echo=True,
 			)
-		self._session_factory = async_sessionmaker(self._engine)
+		self._session_factory: AsyncSession = async_sessionmaker(self._engine)
 
 
 	async def engine_create_all(self: ComfortCRUD, metadata: MetaData) -> bool:
@@ -71,7 +83,10 @@ class ComfortCRUD:
 		return res if isinstance(res, list) else [res]
 
 
-	def rows2dicts(self: ComfortCRUD, keys: list[Column.header], rows: Iterable[Sequence]) -> Iterable[dict]:  # seq..
+	def rows2dicts(
+		self: ComfortCRUD,
+		keys: list[Column.header], rows: Iterable[Sequence],
+	) -> Iterable[dict]:  # seq..
 		for row in rows:
 			yield dict(tuple(zip(keys, row)))
 
@@ -99,7 +114,7 @@ class ComfortCRUD:
 		return await session.execute(ins, data)
 
 
-	# mb need aply that for other projects =)
+	# mb need apply that for other projects =)
 	# ??
 	async def insert_ine_by_key(
 		self: ComfortCRUD, table: Table, data: list[Any] | list[Mapping], data_key: str | Column | None = None,

@@ -33,6 +33,8 @@ delme*
 *.sublime-project
 *.sublime-workspace
 
+temp
+
 test.py
 
 # ./*.html

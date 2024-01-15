@@ -9,6 +9,9 @@ from typing_extensions import Annotated  # noqa: UP035
 
 opt_str = Annotated[Optional[str], mapped_column(default=None)]  # noqa: UP007
 
+ticket_field = Annotated[str, mapped_column(String(128))]
+ticket_big_field = Annotated[str, mapped_column(String(512))]
+
 # TODO: Mb use some models in bot code..
 # TODO: repr..
 
@@ -50,3 +53,41 @@ class UsersChannelsSubscriptionsTable(Base):
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 	user_id = mapped_column(BigInteger(), ForeignKey(UsersTable.user_id, ))  # TODO: Mb on user delete trigger in DB class..
 	channel_id = mapped_column(BigInteger(), nullable=False)
+
+
+# TODO: Profiles table..
+
+
+# TODO: From users-side optionally hide some opts..
+class AppsTicketsTable(Base):
+	"""Devs apps tickets data (made by devs, view by users)."""
+
+	__tablename__ = 'apps_tickets'
+
+	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+	by_dev_id = mapped_column(BigInteger(), ForeignKey(UsersTable.user_id, ))  # TODO: Mb on user delete trigger in DB class..
+	by_dev_username = mapped_column(String(32), ForeignKey(UsersTable.username, ), default=None)
+
+	app_name: Mapped[ticket_field]
+	description: Mapped[ticket_big_field]
+	app_url: Mapped[str] = mapped_column(String(256))
+
+	# ~approximately
+	dev_response_period = mapped_column(String(32), default='-')  # TODO: Table with schedules..
+
+
+class AppsTestersDataTable(Base):
+	"""Tickets data related with users (devs & testers - made by testers, view by devs)."""
+
+	__tablename__ = 'apps_testers_data'
+
+	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+
+	ticket_id: Mapped[int]
+
+	# TODO: Sent tg message id.. & mb check if message removed from bot side & resend..
+
+	tester_id = mapped_column(BigInteger(), ForeignKey(UsersTable.user_id, ))  # TODO: Mb on user delete trigger in DB class..
+
+	dev_status: Mapped[str] = mapped_column(String(16))
+	tester_status: Mapped[str] = mapped_column(String(16))
