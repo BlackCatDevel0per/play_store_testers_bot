@@ -7,7 +7,7 @@ from sqlalchemy import delete, select, text, update
 
 from .crud_queries import query__apps_tickets__app_url
 from .cruds import DBApp
-from .tables import AppsTicketsTable
+from .tables import AppsTestersDataTable, AppsTicketsTable, UsersProfileTable, UsersTable
 
 if TYPE_CHECKING:
 	from typing import Any, Literal
@@ -21,7 +21,19 @@ logger = logging.getLogger('bot')  # FIXME: Rename to ORM or DB or etc. & Manage
 # TODO: Set limits for SELECT queries..
 
 
-class TicketDuplicationError(Exception):
+class DBDuplicationError(Exception):
+	...
+
+
+class TicketDuplicationError(DBDuplicationError):
+	...
+
+
+class TesterOfTicketDuplicationError(DBDuplicationError):
+	...
+
+
+class ProfileOptsDuplicationError(DBDuplicationError):
 	...
 
 
@@ -34,16 +46,10 @@ class DBAppsInteract(DBApp):
 	) -> bool:
 		# TODO: Do it other way.. (check using regex..)
 		# FIXME: Duplicating..
-		# FIXME: Remove stupid things..
-		query_app_url = query__apps_tickets__app_url.where(AppsTicketsTable.app_url == app_url).limit(1)
-		fetch: int | None = await self.db._session_execute_fetch_one_or_none(session, query_app_url)
-		del query_app_url
-		##
-		if fetch:
-			del fetch
-			return True
-		del fetch
-		return False
+		query_app_url = query__apps_tickets__app_url\
+			.where(AppsTicketsTable.app_url == app_url)\
+			.limit(1)
+		return bool((await session.execute(query_app_url)).scalar_one_or_none())
 
 
 	async def add_ticket(
@@ -86,14 +92,132 @@ class DBAppsInteract(DBApp):
 					new_ticket.id, app_name, by_dev_id, by_dev_username,
 				)
 
-				return True
-
 		except TicketDuplicationError:
 			raise
 
 		except Exception:
-			logger.exception('Ticket add with data `%s` failed!', new_ticket)
+			logger.exception('Ticket ADD with data `%s` failed!', new_ticket)
 			return False
+
+		else:
+			return True
+
+
+	async def _is_user_profile_exist(
+		self: DBAppsInteract,
+		session: AsyncSession, user_id: int,
+	) -> bool:
+		# TODO: Do it other way.. (check using regex..)
+		# FIXME: Duplicating..
+		# FIXME: 'query' at end or begin??
+		query_profile_by_user_id = select(UsersProfileTable)\
+			.where(UsersProfileTable.user_id == user_id)\
+			.limit(1)
+		return bool((await session.execute(query_profile_by_user_id)).scalar_one_or_none())
+
+
+	# TODO: Upserting..?
+	# TODO: Use kw by default..
+	async def add_profile_options(
+		self: DBAppsInteract,
+		user_id: int,
+		gmails: str,
+	) -> bool:
+		# FIXME: Duplicating..
+		try:
+			new_profile = UsersProfileTable(
+				user_id=user_id,
+				gmails=gmails,
+			)
+
+			async with self.db._session_factory() as session:
+				if await self._is_user_profile_exist(session, user_id):
+					raise ProfileOptsDuplicationError
+
+				session.add(new_profile)
+
+				await session.flush()
+				await session.commit()
+
+				await session.refresh(new_profile)
+
+				logger.info(
+					'New Profile opts id#%i of user_id`%i`, gmails `%s` ADDED',
+					new_profile.id, user_id, gmails,
+				)
+
+		except ProfileOptsDuplicationError:
+			raise
+
+		except Exception:
+			logger.exception('New Profile ADD with data `%s` failed!', new_profile)
+			return False
+
+		else:
+			return True
+
+
+	async def update_profile_options(
+		self: DBAppsInteract,
+		search_properties: dict[str, Any],
+		update_cols: dict[str, Any],  # data
+	) -> bool:
+		# FIXME: Duplicating..
+		try:
+			async with self.db._session_factory() as session:
+
+				profile_update_query = update(UsersProfileTable)\
+					.filter_by(**search_properties)\
+					.values(update_cols)
+
+				await session.execute(profile_update_query)
+
+				# FIXME: Use autocommit & mb autoflush in context manager..
+				await session.flush()
+				await session.commit()
+
+
+				logger.info(
+					'Profile by params `%s`, "%s" UPDATED',
+					search_properties, update_cols,
+				)
+
+		except Exception:
+			# FIXME: Log params.. & by or with 'params'??
+			logger.exception('Profile UPDATE with data `%s` failed!', update_cols)
+			return False
+
+		else:
+			return True
+
+
+	# FIXME: Make private..
+	async def get_profile_options_of(
+		self: DBAppsInteract,
+		search_properties: dict[str, Any],
+	) -> UsersProfileTable:
+		try:
+			async with self.db._session_factory() as session:
+
+				# FIXME: 'sel' naming..
+				profile_sel_query = select(UsersProfileTable).filter_by(**search_properties).limit(1)
+
+				ret = await session.execute(profile_sel_query)
+				profile = ret.scalar_one()
+
+				##
+				#
+				logger.info(
+					'Profile opts with id#%i of user_id#%i GOT..',
+					profile.id, profile.user_id,
+				)
+
+				return profile
+
+		except Exception:
+			# FIXME: Properly repr some models data..
+			logger.exception('Profile opts GOT with data `%s` failed!', search_properties)
+			raise
 
 
 	# FIXME: Move into the other package..
@@ -105,6 +229,7 @@ class DBAppsInteract(DBApp):
 		return select(AppsTicketsTable).filter_by(**search_properties)
 
 
+	# FIXME: Make private..
 	async def get_ticket_by(
 		self: DBAppsInteract,
 		search_properties: dict[str, Any],
@@ -115,7 +240,7 @@ class DBAppsInteract(DBApp):
 				ticket_query = self.query_find_tickets_by(search_properties).limit(1)
 
 				ret = await session.execute(ticket_query)
-				ticket = ret.fetchone()[0]
+				ticket = ret.scalar_one()
 
 				logger.info(
 					'Ticket id#%i `%s` added by dev `%i`/`%s` GOT..',
@@ -125,7 +250,98 @@ class DBAppsInteract(DBApp):
 				return ticket
 
 		except Exception:
-			logger.exception('Ticket GOT with data `%s` failed!', ticket)
+			# FIXME: Properly repr some models data..
+			logger.exception('Ticket GOT with data `%s` failed!', search_properties)
+			raise
+
+
+	async def _is_tester_joined_to_ticket(
+		self: DBAppsInteract,
+		session: AsyncSession,
+		*,
+		tester_id: int, ticket_id: int,
+	) -> bool:
+		testers_sel_query = select(AppsTestersDataTable)\
+			.where(
+				AppsTestersDataTable.tester_id == tester_id,
+				AppsTestersDataTable.ticket_id == ticket_id,
+		)
+		#
+
+		return bool((await session.execute(testers_sel_query)).scalar_one_or_none())
+
+
+	# TODO: Group some methods to child classes..
+	async def join_tester_to_ticket(
+		self: DBAppsInteract,
+		*,
+		tester_id: int, ticket_id: int,
+	) -> bool:
+		try:
+			new_tester = AppsTestersDataTable(
+				tester_id=tester_id,
+				ticket_id=ticket_id,
+			)
+
+			async with self.db._session_factory() as session:
+				if await self._is_tester_joined_to_ticket(
+					session, tester_id=tester_id, ticket_id=ticket_id,
+				):
+					raise TesterOfTicketDuplicationError
+
+				session.add(new_tester)
+
+				await session.flush()
+				await session.commit()
+
+				await session.refresh(new_tester)
+
+				logger.info(
+					'New Tester id#%i associated with Ticket id`%i` ADDED',
+					tester_id, ticket_id,
+				)
+
+		except Exception:
+			logger.exception(
+				'New Tester ADD id#%i associating with Ticket id`%i` Failed!',
+				tester_id, ticket_id,
+			)
+			return False
+
+		# TODO: Do it with all..
+		else:
+			return True
+
+
+	async def get_testers_of_ticket(
+		self: DBAppsInteract,
+		ticket_id: int,
+	) -> list[AppsTestersDataTable]:
+		# TODO: Set limits..?
+		try:
+			async with self.db._session_factory() as session:
+
+				ticket_testers_query = select(UsersTable)\
+					.join(
+						AppsTestersDataTable,
+						AppsTestersDataTable.tester_id == UsersTable.user_id,
+					)\
+					.where(AppsTestersDataTable.ticket_id == ticket_id)
+
+				ret = await session.execute(ticket_testers_query)
+				# TODO: raise if no data..?
+				# TODO: Recheck if I used fetchall in some places..
+				testers = ret.scalars().all()
+
+				logger.info(
+					'GOT.. testers (%i) of ticket id`%i`',
+					len(testers), ticket_id,  ##
+				)
+
+				return testers
+
+		except Exception:
+			logger.exception('Ticket GOT testers by id`%i` failed!', ticket_id)
 			raise
 
 
@@ -148,8 +364,8 @@ class DBAppsInteract(DBApp):
 				ticket_query = self.query_find_tickets_by(search_properties)
 
 				ret = await session.execute(ticket_query)
-				# TODO: raise if no data..
-				tickets = ret.fetchall()
+				# TODO: raise if no data..?
+				tickets = ret.scalars().all()
 
 				logger.info(
 					'GOT.. tickets count `%i` by params `%s`',
@@ -171,7 +387,9 @@ class DBAppsInteract(DBApp):
 		try:
 			async with self.db._session_factory() as session:
 
-				ticket_update_query = update(AppsTicketsTable).filter_by(**search_properties).values(**update_cols)
+				ticket_update_query = update(AppsTicketsTable)\
+					.filter_by(**search_properties)\
+					.values(update_cols)
 
 				await session.execute(ticket_update_query)
 
@@ -232,7 +450,6 @@ class DBAppsInteract(DBApp):
 		try:
 			async with self.db._session_factory() as session:
 
-				# FIXME: Due sql syntax errors made some crutches~
 				cc = getattr(AppsTicketsTable, counter)
 				tc_update_query_val_p = cc + num
 				tc_update_query_val_m = cc - num
@@ -279,9 +496,9 @@ class DBAppsInteract(DBApp):
 
 
 	## TODO: Update ticket data (with skip & cancelling from bot side),
-	# TODO: count active app testers by ticket_id, list tickets with options,
-	# TODO: list gmails of testers using profile(s) table data..
-	# TODO: get profile data & profile..
+	# TODO: list tickets with options~,
+	# TODO: list gmails of testers~ using profile(s) table data..
+	# TODO: profile..
 
 	# TODO: Some amount of methods for exporting data for archive..
 

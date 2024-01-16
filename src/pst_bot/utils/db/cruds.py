@@ -57,6 +57,7 @@ class ComfortCRUD:
 	# 	return fetch.fetchone()[0]
 
 
+	# FIXME: Remove or do something with it..
 	async def _session_execute_fetch_one_or_none(self: ComfortCRUD, session: AsyncSession, select: Select) -> Any:
 		# Does ORM has thing like this? Hmm..
 		return (await session.execute(select)).scalar_one_or_none()  # FIXME: Return sentinel..

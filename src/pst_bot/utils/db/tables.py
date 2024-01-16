@@ -51,11 +51,23 @@ class UsersChannelsSubscriptionsTable(Base):
 	__tablename__ = 'users_channels_subscriptions'
 
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+
 	user_id = mapped_column(BigInteger(), ForeignKey(UsersTable.user_id, ))  # TODO: Mb on user delete trigger in DB class..
 	channel_id = mapped_column(BigInteger(), nullable=False)
 
 
-# TODO: Profiles table with options (aka options table)..
+# TODO: Profiles table with ~options (aka options table)..
+class UsersProfileTable(Base):
+
+	__tablename__ = 'users_profile'
+
+	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
+
+	user_id: Mapped[int] = mapped_column(BigInteger(), nullable=False)
+
+	# TODO: Move into the other table..
+	# Lazy move..
+	gmails: Mapped[str] = mapped_column(String(), nullable=False)  # gmails comma separated..
 
 
 # TODO: From users-side optionally hide some opts..
@@ -65,7 +77,10 @@ class AppsTicketsTable(Base):
 	__tablename__ = 'apps_tickets'
 
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
-	by_dev_id = mapped_column(BigInteger(), ForeignKey(UsersTable.user_id, ))  # TODO: Mb on user delete trigger in DB class..
+
+
+	# Owner data
+	by_dev_id = mapped_column(BigInteger(), ForeignKey(UsersTable.user_id, ), nullable=False)  # TODO: Mb on user delete trigger in DB class..
 	by_dev_username = mapped_column(String(32), ForeignKey(UsersTable.username, ), default=None)
 
 	active_testers_count: Mapped[int] = mapped_column(default=0)
@@ -73,9 +88,9 @@ class AppsTicketsTable(Base):
 	# TODO
 	pending_testers_count: Mapped[int] = mapped_column(default=0)
 
-	app_name: Mapped[ticket_field]
+	app_name: Mapped[ticket_field] = mapped_column(nullable=False)
 	description: Mapped[ticket_big_field]
-	app_url: Mapped[str] = mapped_column(String(256))
+	app_url: Mapped[str] = mapped_column(String(256), nullable=False)
 
 	# ~approximately
 	dev_response_period = mapped_column(String(32), default='-')  # TODO: Table with schedules..
@@ -88,11 +103,12 @@ class AppsTestersDataTable(Base):
 
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
-	ticket_id: Mapped[int]
+	ticket_id: Mapped[int] = mapped_column(nullable=False)
 
 	# TODO: Sent tg message id.. & mb check if message removed from bot side & resend..
 
-	tester_id = mapped_column(BigInteger(), ForeignKey(UsersTable.user_id, ))  # TODO: Mb on user delete trigger in DB class..
+	tester_id = mapped_column(BigInteger(), ForeignKey(UsersTable.user_id, ), nullable=False)  # TODO: Mb on user delete trigger in DB class..
 
-	dev_status: Mapped[str] = mapped_column(String(16))
-	tester_status: Mapped[str] = mapped_column(String(16))
+	# TODO: Use bools..
+	dev_status: Mapped[str] = mapped_column(String(16), default='accepted', nullable=False)
+	tester_status: Mapped[str] = mapped_column(String(16), default='wait', nullable=False)
