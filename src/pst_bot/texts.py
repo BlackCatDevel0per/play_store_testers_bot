@@ -58,7 +58,7 @@ feedback_text = 'Пока здесь нет текста :D'
 
 # #Часть админа
 startup_notify_admins_text = 'Oh sh*t, here we go again..'
-shutdown_notify_admins_text = 'П*зда!'
+shutdown_notify_admins_text = 'Bye..'
 user_report_notify_admins_text = 'Новый репорт!'
 
 throttled_msg_text = 'Завали тыкалку!'

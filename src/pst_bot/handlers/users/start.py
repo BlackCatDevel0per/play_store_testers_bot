@@ -30,5 +30,16 @@ async def command_start(message: Message, db: DB, bot: Bot) -> None:
 			'\n'
 		) % (message.from_user.full_name, BOT_SELF.full_name),
 	)
-	# FIXME
-	# await db.add_user(message.from_user.id, message.from_user.username, message.from_user.full_name, message.from_user.language_code)
+
+	#
+	await db.tg_users.add_user(
+		message.from_user.id, message.from_user.username,
+		message.from_user.full_name, message.from_user.language_code,
+	)
+
+	##
+	async with db._session_factory() as session:
+		if not await db.apps._is_user_profile_exist(session, message.from_user.id):
+			await db.apps.add_profile_options(
+				user_id=message.from_user.id, gmails='',
+			)

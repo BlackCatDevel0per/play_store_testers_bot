@@ -21,7 +21,7 @@ class DBMiddleware(BaseMiddleware):
 		self.db = DB(*args, **kwargs)  # TODO: More configure..
 
 	async def __call__(
-		self,
+		self: DBMiddleware,
 		handler: Callable[[TelegramObject, dict[str, Any]], Awaitable[Any]],
 		event: TelegramObject,
 		data: dict[str, Any],

@@ -1,6 +1,6 @@
 from loader import dp  # noqa: I001
 
-from . import queries  # noqa: F401
+# from . import queries  # noqa: F401
 from . import base  # noqa: F401
 from . import help  # noqa: F401
 from . import start  # noqa: F401

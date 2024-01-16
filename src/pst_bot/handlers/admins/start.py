@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 	from utils.db import DB
 
 
-@admins_router.message(CommandStart())
+# @admins_router.message(CommandStart())
 # @rate_limit(60, 'start')
 async def command_start(message: Message, db: DB, bot: Bot) -> None:
 	BOT_SELF: Final[User] = await bot.me()

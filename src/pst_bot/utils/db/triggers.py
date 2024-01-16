@@ -60,7 +60,8 @@ class DBTriggers(DBApp):
 
 
 	async def engine_create_all(self: DBTriggers, metadata: MetaData = Base.metadata) -> bool:
-		ret = await super().db.engine_create_all(metadata)
+		##
+		ret = await self.db.engine_create_all(metadata)
 		async with self.db._session_factory() as session:
 			await self.engine_create_UsersData_on_User_insert_trigger(session)
 			await self.engine_create_AppsTesters_on_Dev_delete_trigger(session)

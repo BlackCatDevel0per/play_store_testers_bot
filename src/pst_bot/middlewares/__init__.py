@@ -1,8 +1,8 @@
 from aiogram_middlewares.utils import BrotliedPickleSerializer
-from loader import dp
 
 from data.config import DB_ENGINE
 from data.options.paths import WORKDIR
+from loader import dp
 from utils.misc.logging import logger
 
 from .db import DBMiddleware
@@ -18,8 +18,8 @@ if __name__ == 'middlewares':
 		after_handle_count=5,
 		warnings_count=3,
 		data_serializer=BrotliedPickleSerializer,
-		cooldown_message='Охлади своё тр@ханье!',
-		calmed_message='П*зда =)',
+		cooldown_message='Не спамь!',
+		calmed_message='Можете писать =)',
 
 		# topping_up=False,##
 	)
@@ -38,6 +38,7 @@ if __name__ == 'middlewares':
 		import asyncio
 
 		loop = asyncio.get_event_loop()
-		loop.run_until_complete(dbm.db.engine_create_all())  # FIXME: Not one of the best ways..
+		# FIXME:
+		loop.run_until_complete(dbm.db.triggers.engine_create_all())  # FIXME: Not one of the best ways..
 
 	dp.update.middleware(dbm)

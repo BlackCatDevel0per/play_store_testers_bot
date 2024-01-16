@@ -10,8 +10,6 @@ from aiogram.types import (
 )
 from filters import _endswith, filter_inline_empty_query_data, filter_inline_valid_query_data4gen
 
-from utils.core import get_audio, upload_audio
-
 if TYPE_CHECKING:
 	from logging import Logger
 

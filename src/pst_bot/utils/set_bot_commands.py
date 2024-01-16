@@ -26,6 +26,8 @@ async def set_bot_commands(bot: Bot):
 	default_commands = [
 		BotCommand(command='start', description='Запуск Бота'),
 		BotCommand(command='help', description='Помощь'),
+
+		BotCommand(command='set_gmails', description='Добавить gmail адреса почты'),
 	]
 	_admin_prefix = '[A]'
 	##
@@ -40,10 +42,6 @@ async def set_bot_commands(bot: Bot):
 		BotCommand(command='hardinfo', description=f'{_admin_prefix} Инфа о текущей нагрузке сервера (пока хреновый вывод..)'),
 		# BotCommand(command='statistics', description=f'{_admin_prefix} Статистика бота (кол-во пользователей)'),
 
-		# TODO: Auto-online on bot wakeup (look at states or last commands..)
-		# TODO: Automatically turn on online for a while for some actions.. (call_later to terminate tasks..d)
-		BotCommand(command='online', description=f'{_admin_prefix} Включить автоонлайн'),
-		BotCommand(command='offline', description=f'{_admin_prefix} Отключить автоонлайн (и полинг в целом)'),
 	]
 	await bot.set_my_commands(default_commands)
 

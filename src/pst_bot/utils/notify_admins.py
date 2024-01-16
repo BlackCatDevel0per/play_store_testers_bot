@@ -2,16 +2,20 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from data.config import ADMINS
+from texts import (
+	shutdown_notify_admins_text,
+	startup_notify_admins_text,
+	user_report_notify_admins_text,
+)
+
+from .tools import multiple_requests
+
 if TYPE_CHECKING:
 	from logging import Logger
 
 	from aiogram import Bot
 	from aiogram.types import Message
-
-from data.config import ADMINS
-from texts import shutdown_notify_admins_text, startup_notify_admins_text, user_report_notify_admins_text
-
-from .tools import multiple_requests
 
 # TODO: Mb add tasking to faster spam if bot has much administrators.. Lol telegram will kick it XD
 
