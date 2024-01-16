@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from sqlalchemy import select, text
+from sqlalchemy import delete, select, text, update
 
 from .crud_queries import query__apps_tickets__app_url
 from .cruds import DBApp
@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger('bot')  # FIXME: Rename to ORM or DB or etc. & Manage loggers!!!
 
 # TODO: Mb `finally` block..
+# TODO: Set limits for SELECT queries..
 
 
 class TicketDuplicationError(Exception):
@@ -34,7 +35,7 @@ class DBAppsInteract(DBApp):
 		# TODO: Do it other way.. (check using regex..)
 		# FIXME: Duplicating..
 		# FIXME: Remove stupid things..
-		query_app_url = query__apps_tickets__app_url.where(AppsTicketsTable.app_url == app_url)
+		query_app_url = query__apps_tickets__app_url.where(AppsTicketsTable.app_url == app_url).limit(1)
 		fetch: int | None = await self.db._session_execute_fetch_one_or_none(session, query_app_url)
 		del query_app_url
 		##
@@ -95,21 +96,13 @@ class DBAppsInteract(DBApp):
 			return False
 
 
-	def sess_find_ticket_by(
+	# FIXME: Move into the other package..
+	def query_find_tickets_by(
 		self: DBAppsInteract,
 		search_properties: dict[str, Any],
 	) -> Select:
-		"""Find and return ticket using column names as keys & values as data (doesn't fetch!).
-
-		```python
-		async with db._session_factory() as session:
-			ticket = await db.apps.sess_find_ticket_by(session).first()
-			print(ticket)
-		```
-		"""
 		# TODO: Give the way to use tuple with ORM query conditions/parts..
-		return select(AppsTicketsTable)\
-		.filter_by(**search_properties)
+		return select(AppsTicketsTable).filter_by(**search_properties)
 
 
 	async def get_ticket_by(
@@ -119,7 +112,7 @@ class DBAppsInteract(DBApp):
 		try:
 			async with self.db._session_factory() as session:
 
-				ticket_query = self.sess_find_ticket_by(search_properties)
+				ticket_query = self.query_find_tickets_by(search_properties).limit(1)
 
 				ret = await session.execute(ticket_query)
 				ticket = ret.fetchone()[0]
@@ -136,6 +129,40 @@ class DBAppsInteract(DBApp):
 			raise
 
 
+	async def get_tickets_of(
+		self: DBAppsInteract,
+		search_properties: dict[str, Any],  # Only user_id or username
+	) -> list[AppsTicketsTable]:
+		# NOTE: Use one param or multiple..? (if two exists)
+		if not (
+			AppsTicketsTable.by_dev_id.name in search_properties
+			or
+			AppsTicketsTable.by_dev_username.name in search_properties
+		):
+			msg = 'Only telegram user_id or username are allowed!'
+			raise ValueError(msg)
+
+		try:
+			async with self.db._session_factory() as session:
+
+				ticket_query = self.query_find_tickets_by(search_properties)
+
+				ret = await session.execute(ticket_query)
+				# TODO: raise if no data..
+				tickets = ret.fetchall()
+
+				logger.info(
+					'GOT.. tickets count `%i` by params `%s`',
+					len(tickets), search_properties,  ##
+				)
+
+				return tickets
+
+		except Exception:
+			logger.exception('Ticket GOT by params `%s` failed!', search_properties)
+			raise
+
+
 	async def update_ticket_by(
 		self: DBAppsInteract,
 		search_properties: dict[str, Any],
@@ -144,23 +171,24 @@ class DBAppsInteract(DBApp):
 		try:
 			async with self.db._session_factory() as session:
 
-				ticket = self.sess_find_ticket_by(search_properties).first()
+				ticket_update_query = update(AppsTicketsTable).filter_by(**search_properties).values(**update_cols)
 
-				for column, value in update_cols.items():
-					setattr(ticket, column, value)
+				await session.execute(ticket_update_query)
 
 				await session.flush()
 				await session.commit()
 
+
 				logger.info(
-					'Ticket id#%i `%s` added by dev `%i`/`%s` UPDATED',
-					ticket.id, ticket.app_name, ticket.by_dev_id, ticket.by_dev_username,
+					'Ticket by params `%s`, "%s" UPDATED',
+					search_properties, update_cols,
 				)
 
 				return True
 
 		except Exception:
-			logger.exception('Ticket UPDATE with data `%s` failed!', ticket)
+			# FIXME: Log params.. & by or with 'params'??
+			logger.exception('Ticket UPDATE with data `%s` failed!', update_cols)
 			return False
 
 
@@ -171,67 +199,82 @@ class DBAppsInteract(DBApp):
 		try:
 			async with self.db._session_factory() as session:
 
-				ticket = self.sess_find_ticket_by(search_properties)
+				# TODO: Move into the one package..
+				ticket_delete_query = delete(AppsTicketsTable).filter_by(**search_properties)
 
-				ticket.delete()
-
-				await session.flush()
+				await session.execute(ticket_delete_query)
 				await session.commit()
 
 				logger.info(
-					'Ticket id#%i `%s` added by dev `%i`/`%s` DELETED',
-					ticket.id, ticket.app_name, ticket.by_dev_id, ticket.by_dev_username,
+					'Ticket by params `%s` DELETED',
+					search_properties,
 				)
 
 				return True
 
 		except Exception:
-			logger.exception('Ticket DELETE with data `%s` failed!', ticket)
+			logger.exception('Ticket DELETE by params `%s` failed!', search_properties)
 			return False
 
 
-	async def testers_counter_action(
+	async def testers_counter_action_by(
 		self: DBAppsInteract,
-		ticket_id: int,
+		search_properties: dict[str, Any],
 		action: Literal['+', '-'], num: int,
+		##
 		counter: Literal['active_testers_count', 'pending_testers_count'] = 'active_testers_count',
 	) -> bool:
-		if action not in ('+', '-') or counter in ('active_testers_count', 'pending_testers_count'):
+		# Check counter col & action..
+		if len(action) != 1 and action not in ('+', '-') or \
+			counter not in ('active_testers_count', 'pending_testers_count'):
 			raise ValueError
-
-		if not isinstance(ticket_id, int):
-			raise TypeError
 
 		try:
 			async with self.db._session_factory() as session:
 
-				query = text(
-					'UPDATE tickets SET :counter = :counter'
-					' '
-					':action :count_up'
-					' '
-					'WHERE id = :ticket_id RETURNING :counter'
-				)
+				# FIXME: Due sql syntax errors made some crutches~
+				cc = getattr(AppsTicketsTable, counter)
+				tc_update_query_val_p = cc + num
+				tc_update_query_val_m = cc - num
+				tc_update_query = update(AppsTicketsTable)
 
-				ret = await session.execute(
-					query,
-					{
-						'ticket_id': ticket_id, 'count_up': num,
-						'action': action, 'counter': counter,
-					},
-				)
-				count = ret.fetchone()[0]  ##
+				gen_tc_query = lambda val: tc_update_query\
+					.values(
+						{
+							AppsTicketsTable.active_testers_count.name: val,
+						},
+					).filter_by(**search_properties)
+
+				if action == '+':
+					ticket_count_query = gen_tc_query(tc_update_query_val_p)
+				else:
+					ticket_count_query = gen_tc_query(tc_update_query_val_m)
+
+				# get_count_query = text(
+				# 	f'SELECT {counter}'  # noqa: S608
+				# 	' '
+				# 	'FROM :table WHERE id = :ticket_id'
+				# )
+
+				await session.execute(ticket_count_query)
+
+				await session.flush()
+				await session.commit()
 
 				# FIXME: Make pattern for such logs..
 				logger.info(
-					'Ticket id#%i COUNTER UPDATED to %i, now `%i`',
-					ticket_id, num, count,
+					'Ticket COUNTER UPDATED to `%s%i`, by params `%s`',
+					action, num, search_properties,
 				)
 
 				return True
 
 		except Exception:
-			logger.exception('Ticket COUNTER UPDATE with ticket_id `%s` failed!', ticket_id)
+			logger.exception(
+				'Ticket COUNTER UPDATE to `%s%i`, with params `%s` failed!',
+				action, num,
+				search_properties,
+			)
 			return False
 
 
