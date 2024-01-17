@@ -30,6 +30,8 @@ if TYPE_CHECKING:
 
 	# from utils.db import DB
 
+# Callback
+
 
 @admins_router.message(CommandUse('sh', usage_text='Paste shell command to args.'))
 # @rate_limit(5, 'sh')

@@ -19,7 +19,13 @@ from .routers import users_router
 
 
 # TODO: Move filters..
-@users_router.message(CommandUse('report', magic4usage=~F.args.strip() | (F.args.strip().len() < 16), usage_text='Minimal length for report text 16 symblos & cooldown 10 mins.'))
+@users_router.message(
+	CommandUse(
+		'report',
+		magic4usage=~F.args.strip() | (F.args.strip().len() < 16),
+		usage_text='Minimal length for report text 16 symblos & cooldown 10 mins.',
+	),
+)
 # @rate_limit(600, 'report')
 async def admins_report(message: Message, command: CommandObject, bot: Bot):
 	# TODO: More user info..

@@ -28,6 +28,7 @@ async def set_bot_commands(bot: Bot):
 		BotCommand(command='help', description='Помощь'),
 
 		BotCommand(command='set_gmails', description='Добавить gmail адреса почты'),
+		BotCommand(command='menu', description='Меню действий'),
 	]
 	_admin_prefix = '[A]'
 	##

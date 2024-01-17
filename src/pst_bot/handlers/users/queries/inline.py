@@ -23,7 +23,7 @@ from handlers.users.routers import subed_users_router
 endswith = ', '.join(f'"{i}"' for i in _endswith)
 
 
-@subed_users_router.inline_query(filter_inline_empty_query_data)
+# @subed_users_router.inline_query(filter_inline_empty_query_data)
 # FIXME: Set another rate limit after implement flags..
 async def invalid_query_text(query: InlineQuery, bot: Bot, db: DB) -> None:
 	user_voice = await db.get_voice(query.from_user.id)
@@ -48,7 +48,7 @@ async def invalid_query_text(query: InlineQuery, bot: Bot, db: DB) -> None:
 # FIXME: Crutch (filter)
 # TODO: Add filters and change logic..
 # TODO: Set throttle options..
-@subed_users_router.inline_query(filter_inline_valid_query_data4gen)
+# @subed_users_router.inline_query(filter_inline_valid_query_data4gen)
 async def valid_query_data4gen(query: InlineQuery, bot: Bot, db: DB, logger: Logger) -> None:
 	query_text = query.query.strip()
 	user_voice = await db.get_voice(query.from_user.id)

@@ -1,1 +1,1 @@
-from .msgs_listen2gen_voice import FSMMsgsListen2Gen  # noqa: F401
+from .new_ticket import FSMNewTicket  # noqa: F401

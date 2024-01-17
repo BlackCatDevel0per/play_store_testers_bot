@@ -6,6 +6,7 @@ from aiogram import F
 from aiogram.filters import CommandObject, StateFilter
 
 from filters import CommandTrigger, CommandUse, filter_message_invalid_command_args4gen
+from keyboards.inline import keyboard_menu
 
 from .routers import users_router
 
@@ -38,3 +39,9 @@ async def set_gmail_command(message: Message, command: CommandObject, db: DB):
 		update_cols={'gmails': command.args},
 	)
 	await message.answer(f'Адреса: {command.args}\nУспешно добавлены')
+
+
+# FIXME: Less duplicate & internatialization..
+@users_router.message(CommandTrigger('menu'))
+async def menu_command(message: Message):
+	await message.answer('Выберите действие:', reply_markup=keyboard_menu)

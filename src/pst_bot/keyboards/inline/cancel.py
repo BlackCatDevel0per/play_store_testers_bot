@@ -9,7 +9,7 @@ keyboard_buttons_questions = (
 	),
 )
 
-keyboard_question_dialog = InlineKeyboardMarkup(
+keyboard_spam_question_dialog = InlineKeyboardMarkup(
 	inline_keyboard=keyboard_buttons_questions,
 	one_time_keyboard=True,
 )
@@ -21,7 +21,7 @@ keyboard_button_cancel = (
 	),
 )
 
-keyboard_cancel_dialog = InlineKeyboardMarkup(
+keyboard_spam_cancel_dialog = InlineKeyboardMarkup(
 	inline_keyboard=keyboard_button_cancel,
 	one_time_keyboard=True,
 )
