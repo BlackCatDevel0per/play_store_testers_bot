@@ -49,6 +49,6 @@ async def set_bot_commands(bot: Bot):
 	# TODO: Mb handle in errors handler..?
 	# aiogram.exceptions.TelegramBadRequest: Telegram server says - Bad Request: chat not found
 	await multiple_requests(
-		wrap_set_bot_commands_for, user_ids=ADMINS, prefix='[Update Commands Scope]',
+		wrap_set_bot_commands_for, users_ids=ADMINS, log_prefix='[Update Commands Scope]',
 		bot=bot, commands=admin_commands,
 	)

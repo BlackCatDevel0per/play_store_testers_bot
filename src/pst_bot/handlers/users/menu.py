@@ -71,8 +71,9 @@ async def ticket_handle_description(message: Message, state: FSMContext, logger:
 @users_router.message(FSMNewTicket.set_app_url)
 async def ticket_handle_app_url(
 	message: Message,
-	state: FSMContext, db: DB, logger: Logger,
+	state: FSMContext, logger: Logger,
 ) -> None:
+	# TODO: Where better to check ticket existent..? (better look/refactor project architecture..)
 	await ticket_handle_state(
 		message, state, logger,
 

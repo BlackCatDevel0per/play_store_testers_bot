@@ -21,28 +21,31 @@ if TYPE_CHECKING:
 
 
 # UwU
-async def notify(bot: Bot, text: str, *, user_ids: list[int]) -> None:
-	await multiple_requests(bot.send_message, user_ids=user_ids, prefix='[Admins notify]', text=text)
+async def notify(bot: Bot, text: str, *, users_ids: list[int]) -> None:
+	await multiple_requests(
+		bot.send_message,
+		users_ids=users_ids, log_prefix='[Admins notify]', text=text,
+	)
 
 
 async def on_startup_notify(bot: Bot, logger: Logger) -> None:
-	await notify(bot, startup_notify_admins_text, user_ids=ADMINS)
+	await notify(bot, startup_notify_admins_text, users_ids=ADMINS)
 	logger.info('Bot is running!')
 
 
 async def on_shutdown_notify(bot: Bot, logger: Logger) -> None:
-	await notify(bot, shutdown_notify_admins_text, user_ids=ADMINS)
+	await notify(bot, shutdown_notify_admins_text, users_ids=ADMINS)
 	logger.info('Shuting down bot..')
 
 
 async def report_notify(bot: Bot, text: str) -> None:
-	await notify(bot, f"{user_report_notify_admins_text}\n{text}", user_ids=ADMINS)
+	await notify(bot, f"{user_report_notify_admins_text}\n{text}", users_ids=ADMINS)
 
 
 # Pls move to other file
 # Need some aiogram types..
 # Not arg isn't iterable now..
-async def msg_to(msg: Message, user_ids: list[int], logger: Logger) -> int:
+async def msg_to(msg: Message, users_ids: list[int], logger: Logger) -> int:
 	"""Can send almost all messages with different content types.
 
 	Usually used for spamming =)
@@ -50,5 +53,5 @@ async def msg_to(msg: Message, user_ids: list[int], logger: Logger) -> int:
 	logger.info('Spamming..')
 	return await multiple_requests(
 		# TODO: Use other func.. & use bot from message or bot from args (mb optional) or at least `msg._bot`!
-		msg.copy_to, user_ids=user_ids, prefix='[SPAM]',
+		msg.copy_to, users_ids=users_ids, log_prefix='[SPAM]',
 	)

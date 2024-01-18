@@ -14,8 +14,8 @@ if __name__ == 'middlewares':
 
 	# 5 requests / 10 sec.
 	rm = RateMiddleware(## ##1 sec. problems..
-		period_sec=10,
-		after_handle_count=5,
+		period_sec=15,
+		after_handle_count=8,
 		warnings_count=3,
 		data_serializer=BrotliedPickleSerializer,
 		cooldown_message='Не спамь!',

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from aiogram import F
+from aiogram.filters import StateFilter
 
 from handlers.users.routers import users_router
 from keyboards.callback_data import MenuData
@@ -10,6 +11,7 @@ from states import FSMNewTicket
 
 # TODO: Move into the other package..
 from utils.db.apps_interact import TicketDuplicationError
+from utils.tools import spam2users
 
 if TYPE_CHECKING:
 	from logging import Logger
@@ -19,12 +21,17 @@ if TYPE_CHECKING:
 	from aiogram.types import CallbackQuery, Message
 
 	from utils.db import DB
+	from utils.db.tables import AppsTicketsTable as AppTicket
 
 # TODO: One step back & cancel && default FSM methods constructor like these two
 
 
 # TODO: Use enums for some filters data..?
-@users_router.callback_query(MenuData.filter(F.action == 'new_ticket'))
+# TODO: Limit & ban spammers..
+# TODO: Dynamically update tickets using inline button under message & get from that messageinfo about ticket..
+# TODO: Make app_url column unique & other sql decorations..?
+# TODO: Make normal README & spec..
+@users_router.callback_query(StateFilter(None), MenuData.filter(F.action == 'new_ticket'))
 async def handle_new_ticket(
 	callback_query: CallbackQuery,
 	bot: Bot, state: FSMContext,
@@ -44,6 +51,7 @@ async def ticket_handle_confirm(
 ) -> None:
 	data = await state.get_data()
 	try:
+		# TODO: Mb better return object..? Make method for it..
 		await db.apps.add_ticket(
 			callback_query.from_user.id, callback_query.from_user.username,
 			**data,
@@ -62,7 +70,31 @@ async def ticket_handle_confirm(
 		callback_query.from_user.username,
 	)
 
-	# TODO: Message all (exclude owner of ticket)
+	# TODO: Store messages chat_id+message_id pairs to dynamically update it!
+	# ticket_record: AppTicket = await db.apps.get_ticket_by({'app_url': data['app_url']})
+
+	ticket: str = (
+		f'username: {callback_query.from_user.username}'
+		'\n'
+		f"Название: {data['app_name']}"
+		'\n'
+		'Описание:'
+		'\n***\n'
+		f"{data['description']}"
+		'\n***\n'
+		f"Ссылка на приложение: {data['app_url']}"
+	)
+
+	# Spam to all excluding sender
+	users_ids = await db.tg_users.get_users_ids()
+	# TODO: Make option for users to exclude some testers (blacklist) & blacklist self too..
+	# NOTE: Uncomment on prod..
+	# for index, user_id in enumerate(users_ids):
+	# 	if user_id == callback_query.from_user.id:
+	# 		del users_ids[index]
+	# 		break
+
+	await spam2users(bot, ticket, users_ids=users_ids)
 
 	await bot.send_message(callback_query.from_user.id, 'Готово =)')
 
@@ -72,7 +104,7 @@ async def ticket_handle_confirm(
 
 
 # TODO: Same action for command..
-@users_router.callback_query(FSMNewTicket, MenuData.filter(F.action == 'cancel'))
+@users_router.callback_query(StateFilter(FSMNewTicket), MenuData.filter(F.action == 'cancel'))
 async def ticket_handle_cancel(
 	callback_query: CallbackQuery,
 	bot: Bot, state: FSMContext, logger: Logger,

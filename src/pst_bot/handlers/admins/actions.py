@@ -105,9 +105,9 @@ async def shell(message: Message, command: CommandObject) -> None:
 # 		await del_ac_msg(bot, callback_query, state)
 # 		data = await state.get_data()
 # 		msg: Message = data['msg']
-# 		# user_ids = db.get_users_ids(no_admins=True)
-# 		user_ids = await db.get_users_ids()
-# 		sended_cnt = await msg_to(msg, user_ids, logger)
+# 		# users_ids = db.get_users_ids(no_admins=True)
+# 		users_ids = await db.get_users_ids()
+# 		sended_cnt = await msg_to(msg, users_ids, logger)
 # 		await sending_msg.delete()
 # 		await msg.reply(f'Отправлено: {sended_cnt}/{await db.get_users_count(no_admins=True)} пользователям =)', reply_markup=None)
 # 		await state.clear()
