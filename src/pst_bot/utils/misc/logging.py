@@ -1,25 +1,29 @@
 import logging
+import os
 from datetime import datetime
 
 from rich.logging import RichHandler
 
 from data.options import LOGGING_LEVEL
 
-fh = logging.FileHandler(
-    filename=(
-		'bot_log-'
-		f"{datetime.strftime(datetime.now(), '%Y-%m-%d_%H%M%S')}"
-        '.log'
-	),
-)
-fh.setLevel(logging.DEBUG)
+handlers = [RichHandler(markup=True, rich_tracebacks=True)]
+
+if os.environ.get('DEBUG_MODE'):
+	fh = logging.FileHandler(
+	    filename=(
+			'bot_log-'
+			f"{datetime.strftime(datetime.now(), '%Y-%m-%d_%H%M%S')}"
+	        '.log'
+		),
+	)
+	fh.setLevel(logging.DEBUG)
 
 logging.basicConfig(
 	format='%(message)s',
 	level=logging.INFO,
 	# force=True,  # Use just for see other logging handlers
 
-	handlers=[RichHandler(markup=True, rich_tracebacks=True), fh],
+	handlers=handlers,
 )
 
 DEFAULT_LOGGER = 'bot'

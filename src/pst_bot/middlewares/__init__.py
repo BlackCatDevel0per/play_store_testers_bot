@@ -1,3 +1,5 @@
+import os
+
 from aiogram_middlewares.utils import BrotliedPickleSerializer
 
 from data.config import DB_ENGINE
@@ -34,7 +36,7 @@ if __name__ == 'middlewares':
 	dbm = DBMiddleware(engine=DB_ENGINE)
 
 	# FIXME: Crutch..
-	if not WORKDIR.joinpath('sqlite3.db').exists():
+	if not WORKDIR.joinpath('sqlite3.db').exists() or not os.environ.get('DEBUG_MODE'):
 		import asyncio
 
 		loop = asyncio.get_event_loop()

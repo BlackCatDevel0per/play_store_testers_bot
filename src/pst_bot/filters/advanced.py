@@ -7,9 +7,9 @@ from aiogram import F
 from aiogram.filters import Command, Filter
 from aiogram.filters.command import CommandException, CommandPatternType, Pattern
 from aiogram.types import Message
-from keyboards.inline import keyboard_channels_links_list
 
 from data.config import CHANNELS_IDS
+from keyboards.inline import keyboard_channels_links_list
 
 if TYPE_CHECKING:
 	from collections.abc import Sequence

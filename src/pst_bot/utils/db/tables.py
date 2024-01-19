@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime  # noqa: TCH003
 from typing import Optional
 
-from sqlalchemy import BigInteger, ForeignKey, String, func
+from sqlalchemy import BigInteger, ForeignKey, ForeignKeyConstraint, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from typing_extensions import Annotated  # noqa: UP035
 
@@ -29,6 +29,8 @@ class UsersTable(Base):
 
 	__tablename__ = 'users'
 
+	_co = 0
+
 	user_id = mapped_column(BigInteger(), primary_key=True)
 	username: Mapped[Optional[str]] = mapped_column(String(32), default=None)  # min 5  # noqa: UP007
 	full_name: Mapped[opt_str] = mapped_column(String(132), default=None)
@@ -41,6 +43,8 @@ class UsersDataTable(Base):
 
 	__tablename__ = 'users_data'
 
+	_co = 1
+
 	user_id = mapped_column(BigInteger(), ForeignKey(UsersTable.user_id, ), primary_key=True)  # TODO: Mb on user delete trigger in DB class..
 	current_language_code: Mapped[str] = mapped_column(default='ru')
 
@@ -49,6 +53,8 @@ class UsersChannelsSubscriptionsTable(Base):
 	"""Users channels subscriptions data table - with data for interacting users channels.."""
 
 	__tablename__ = 'users_channels_subscriptions'
+
+	_co = 2
 
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
@@ -60,6 +66,8 @@ class UsersChannelsSubscriptionsTable(Base):
 class UsersProfileTable(Base):
 
 	__tablename__ = 'users_profile'
+
+	_co = 3
 
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
@@ -76,12 +84,15 @@ class AppsTicketsTable(Base):
 
 	__tablename__ = 'apps_tickets'
 
+	_co = 4
+
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
 
 	# Owner data
-	by_dev_id = mapped_column(BigInteger(), ForeignKey(UsersTable.user_id, ), nullable=False)  # TODO: Mb on user delete trigger in DB class..
-	by_dev_username = mapped_column(String(32), ForeignKey(UsersTable.username, ), default=None)
+	# FIXME: Foreign keys in pg -_-
+	by_dev_id = mapped_column(BigInteger(), nullable=False)#, ForeignKey(UsersTable.user_id, ))  # TODO: Mb on user delete trigger in DB class..
+	by_dev_username = mapped_column(String(32), default=None)#, ForeignKey(UsersTable.username, ))
 
 	active_testers_count: Mapped[int] = mapped_column(default=0)
 
@@ -95,11 +106,20 @@ class AppsTicketsTable(Base):
 	# ~approximately
 	dev_response_period = mapped_column(String(32), default='-')  # TODO: Table with schedules..
 
+	# __table_args__ = (
+	# 	ForeignKeyConstraint(
+	# 		[by_dev_id, by_dev_username],
+	# 		[UsersTable.user_id, UsersTable.username],
+	# 	),
+	# )
+
 
 class AppsTestersDataTable(Base):
 	"""Tickets data related with users (devs & testers - made by testers, view by devs)."""
 
 	__tablename__ = 'apps_testers_data'
+
+	_co = 5
 
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 

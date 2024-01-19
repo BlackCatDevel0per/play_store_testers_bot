@@ -29,11 +29,19 @@ class DBApp:
 
 
 class ComfortCRUD:
-	def __init__(self: ComfortCRUD, engine: str, pool_size=5, max_overflow=10) -> None:
+	def __init__(
+		self: ComfortCRUD,
+		engine: str,
+		pool_size: int = 5, max_overflow: int = 10,
+	) -> None:
 		engine_db_type = engine.split('+', maxsplit=1)[0]
 		# Crutch..
 		if engine_db_type != 'sqlite':
-			self._engine = create_async_engine(engine, pool_size=pool_size, max_overflow=max_overflow)
+			self._engine = create_async_engine(
+				engine,
+				pool_size=pool_size,
+				max_overflow=max_overflow,
+			)
 			# TODO: Warning..
 		else:
 			self._engine = create_async_engine(
@@ -47,6 +55,25 @@ class ComfortCRUD:
 		###
 		async with self._engine.connect() as conn:
 			await conn.run_sync(metadata.create_all)
+			await conn.commit()
+
+		# # FIXME: Crutchy~
+		# tables = [
+		# 	'users',
+		# 	'users_data',
+		# 	'users_channels_subscriptions',
+		# 	'users_profile',
+		# 	'apps_tickets',
+		# 	'apps_testers_data',
+		# ]
+		# async with self._engine.connect() as conn:
+		# 	for table in tables:
+		# 		table_object = metadata.tables[table]
+		# 		print('Creating table `%s`' % table)
+		# 		await conn.run_sync(table_object.create)
+
+		# 		# TODO: Commit optionally..
+		# 		await conn.commit()
 		return True
 
 

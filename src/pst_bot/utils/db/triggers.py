@@ -22,7 +22,7 @@ class DBTriggers(DBApp):
 	) -> bool:  # noqa: N802
 		# FIXME: Crutch, but ok..
 		##
-		stmt = text(
+		stmt4sqlite = text(
 			(  # noqa: UP032
 				"CREATE TRIGGER users_data_insert_trigger\n"
 				"AFTER INSERT\n"
@@ -36,7 +36,40 @@ class DBTriggers(DBApp):
 			),
 		)
 
-		await session.execute(stmt)
+		stmt_func = text(
+			(  # noqa: UP032
+				'CREATE OR REPLACE FUNCTION users_data_insert_function()\n'
+				'RETURNS TRIGGER AS $$\n'
+				'BEGIN\n'
+				'	INSERT INTO users_data (user_id, current_language_code)\n'
+				"	VALUES (NEW.user_id, '{default_current_language_code}');\n"
+				'	RETURN NEW;\n'
+				'END;\n'
+				'$$ LANGUAGE plpgsql;'
+			).format(
+					default_current_language_code=UsersDataTable.current_language_code.default.arg,
+			),
+		)
+
+		stmt_drop_if_exist = text(
+			'DROP TRIGGER IF EXISTS users_data_insert_trigger ON users;\n'
+		)
+
+		stmt_trigger = text(
+			(  # noqa: UP032
+				'CREATE TRIGGER users_data_insert_trigger\n'
+				'AFTER INSERT\n'
+				'ON users\n'
+				'FOR EACH ROW\n'
+				'EXECUTE FUNCTION users_data_insert_function();'
+			),
+		)
+
+		await session.execute(stmt_func)
+		await session.execute(stmt_drop_if_exist)
+		await session.execute(stmt_trigger)
+		await session.commit()
+
 		return True
 
 
@@ -45,7 +78,8 @@ class DBTriggers(DBApp):
 	) -> bool:  # noqa: N802
 		# FIXME: Crutch, but ok..
 		##
-		stmt = text(
+		# TODO: Make compatibility with sqlite..
+		stmt4sqlite = text(
 			'CREATE TRIGGER apps_tickets_delete_trigger\n'
 			'AFTER DELETE\n'
 			'ON apps_tickets\n'
@@ -55,7 +89,34 @@ class DBTriggers(DBApp):
 			'END;'
 		)
 
-		await session.execute(stmt)
+		stmt_func = text(
+			'CREATE OR REPLACE FUNCTION apps_tickets_delete_function()\n'
+			'RETURNS TRIGGER AS $$\n'
+			'BEGIN\n'
+			'    DELETE FROM apps_testers_data\n'
+			'    WHERE ticket_id = OLD.id;\n'
+			'    RETURN OLD;\n'
+			'END;\n'
+			'$$ LANGUAGE plpgsql;'
+		)
+
+		stmt_drop_if_exist = text(
+			'DROP TRIGGER IF EXISTS apps_tickets_delete_trigger ON apps_tickets;\n'
+		)
+
+		stmt_trigger = text(
+			'CREATE TRIGGER apps_tickets_delete_trigger\n'
+			'AFTER DELETE\n'
+			'ON apps_tickets\n'
+			'FOR EACH ROW\n'
+			'EXECUTE FUNCTION apps_tickets_delete_function();'
+		)
+
+		await session.execute(stmt_func)
+		await session.execute(stmt_drop_if_exist)
+		await session.execute(stmt_trigger)
+		await session.commit()
+
 		return True
 
 

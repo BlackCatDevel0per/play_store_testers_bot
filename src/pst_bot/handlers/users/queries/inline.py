@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 
 from handlers.users.routers import subed_users_router
 
+# TODO: ...
+
 endswith = ', '.join(f'"{i}"' for i in _endswith)
 
 

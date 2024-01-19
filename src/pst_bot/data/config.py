@@ -21,4 +21,7 @@ CHANNELS_LINKS = {
 
 # PostgreSQL Derver for future =)
 # DB_ENGINE = os.environ['DB_ENGINE']
-DB_ENGINE = 'sqlite+aiosqlite:///sqlite3.db'
+if os.environ.get('DEBUG_MODE'):
+	DB_ENGINE = 'sqlite+aiosqlite:///sqlite3.db'
+else:
+	DB_ENGINE = os.environ['DB_URL']

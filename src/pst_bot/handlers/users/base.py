@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 
 	from utils.db import DB
 
+# TODO: Ping bot..?
+
 
 @users_router.message(
 	CommandUse(
