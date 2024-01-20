@@ -34,16 +34,16 @@ class ComfortCRUD:
 		engine: str,
 		pool_size: int = 5, max_overflow: int = 10,
 	) -> None:
-		engine_db_type = engine.split('+', maxsplit=1)[0]
+		self._engine_db_type = engine.split('+', maxsplit=1)[0]
 		# Crutch..
-		if engine_db_type != 'sqlite':
+		if self._engine_db_type != 'sqlite':
 			self._engine = create_async_engine(
 				engine,
 				# echo=True,
 				pool_size=pool_size,
 				max_overflow=max_overflow,
 			)
-			# TODO: Warning..
+			# TODO: Warning(s)..
 		else:
 			self._engine = create_async_engine(
 				engine,

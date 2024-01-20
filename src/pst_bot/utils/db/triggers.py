@@ -21,20 +21,6 @@ class DBTriggers(DBApp):
 		self: DBTriggers, session: AsyncSession,
 	) -> bool:  # noqa: N802
 		# FIXME: Crutch, but ok..
-		##
-		stmt4sqlite = text(
-			(  # noqa: UP032
-				"CREATE TRIGGER users_data_insert_trigger\n"
-				"AFTER INSERT\n"
-				"ON users\n"
-				"BEGIN\n"
-				"	INSERT INTO users_data (user_id, current_language_code)\n"
-				"	VALUES (new.user_id, '{default_current_language_code}');\n"
-				"END;"
-			).format(
-					default_current_language_code=UsersDataTable.current_language_code.default.arg,
-			),
-		)
 
 		stmt_func = text(
 			(  # noqa: UP032
@@ -55,18 +41,37 @@ class DBTriggers(DBApp):
 			'DROP TRIGGER IF EXISTS users_data_insert_trigger ON users;\n'
 		)
 
-		stmt_trigger = text(
-			(  # noqa: UP032
-				'CREATE TRIGGER users_data_insert_trigger\n'
-				'AFTER INSERT\n'
-				'ON users\n'
-				'FOR EACH ROW\n'
-				'EXECUTE FUNCTION users_data_insert_function();'
-			),
-		)
+		if self.db._engine_db_type != 'sqlite':
+			stmt_trigger = text(
+				(  # noqa: UP032
+					'CREATE TRIGGER users_data_insert_trigger\n'
+					'AFTER INSERT\n'
+					'ON users\n'
+					'FOR EACH ROW\n'
+					'EXECUTE FUNCTION users_data_insert_function();'
+				),
+			)
+		else:
+			stmt4sqlite = text(
+				(  # noqa: UP032
+					"CREATE TRIGGER users_data_insert_trigger\n"
+					"AFTER INSERT\n"
+					"ON users\n"
+					"BEGIN\n"
+					"	INSERT INTO users_data (user_id, current_language_code)\n"
+					"	VALUES (new.user_id, '{default_current_language_code}');\n"
+					"END;"
+				).format(
+						default_current_language_code=UsersDataTable.current_language_code.default.arg,
+				),
+			)
 
-		await session.execute(stmt_func)
-		await session.execute(stmt_drop_if_exist)
+			stmt_trigger = stmt4sqlite
+
+		if self.db._engine_db_type != 'sqlite':
+			await session.execute(stmt_func)
+			await session.execute(stmt_drop_if_exist)
+
 		await session.execute(stmt_trigger)
 		await session.commit()
 
@@ -78,16 +83,6 @@ class DBTriggers(DBApp):
 	) -> bool:  # noqa: N802
 		# FIXME: Crutch, but ok..
 		##
-		# TODO: Make compatibility with sqlite..
-		stmt4sqlite = text(
-			'CREATE TRIGGER apps_tickets_delete_trigger\n'
-			'AFTER DELETE\n'
-			'ON apps_tickets\n'
-			'BEGIN\n'
-			'	DELETE FROM apps_testers_data\n'
-			'	WHERE ticket_id = OLD.id;\n'
-			'END;'
-		)
 
 		stmt_func = text(
 			'CREATE OR REPLACE FUNCTION apps_tickets_delete_function()\n'
@@ -104,16 +99,31 @@ class DBTriggers(DBApp):
 			'DROP TRIGGER IF EXISTS apps_tickets_delete_trigger ON apps_tickets;\n'
 		)
 
-		stmt_trigger = text(
-			'CREATE TRIGGER apps_tickets_delete_trigger\n'
-			'AFTER DELETE\n'
-			'ON apps_tickets\n'
-			'FOR EACH ROW\n'
-			'EXECUTE FUNCTION apps_tickets_delete_function();'
-		)
+		if self.db._engine_db_type != 'sqlite':
+			stmt_trigger = text(
+				'CREATE TRIGGER apps_tickets_delete_trigger\n'
+				'AFTER DELETE\n'
+				'ON apps_tickets\n'
+				'FOR EACH ROW\n'
+				'EXECUTE FUNCTION apps_tickets_delete_function();'
+			)
+		else:
+			stmt4sqlite = text(
+				'CREATE TRIGGER apps_tickets_delete_trigger\n'
+				'AFTER DELETE\n'
+				'ON apps_tickets\n'
+				'BEGIN\n'
+				'	DELETE FROM apps_testers_data\n'
+				'	WHERE ticket_id = OLD.id;\n'
+				'END;'
+			)
 
-		await session.execute(stmt_func)
-		await session.execute(stmt_drop_if_exist)
+			stmt_trigger = stmt4sqlite
+
+		if self.db._engine_db_type != 'sqlite':
+			await session.execute(stmt_func)
+			await session.execute(stmt_drop_if_exist)
+
 		await session.execute(stmt_trigger)
 		await session.commit()
 

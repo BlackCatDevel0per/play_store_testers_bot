@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime  # noqa: TCH003
 from typing import Optional
 
-from sqlalchemy import BigInteger, ForeignKey, ForeignKeyConstraint, String, func
+from sqlalchemy import BigInteger, ForeignKey, String, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from typing_extensions import Annotated  # noqa: UP035
 
@@ -29,9 +29,7 @@ class UsersTable(Base):
 
 	__tablename__ = 'users'
 
-	_co = 0
-
-	user_id = mapped_column(BigInteger(), primary_key=True)
+	user_id = mapped_column(BigInteger(), unique=True, primary_key=True)
 	username: Mapped[Optional[str]] = mapped_column(String(32), default=None)  # min 5  # noqa: UP007
 	full_name: Mapped[opt_str] = mapped_column(String(132), default=None)
 	language_code: Mapped[opt_str] = mapped_column(String(3))
@@ -43,8 +41,6 @@ class UsersDataTable(Base):
 
 	__tablename__ = 'users_data'
 
-	_co = 1
-
 	user_id = mapped_column(BigInteger(), ForeignKey(UsersTable.user_id, ), primary_key=True)  # TODO: Mb on user delete trigger in DB class..
 	current_language_code: Mapped[str] = mapped_column(default='ru')
 
@@ -53,8 +49,6 @@ class UsersChannelsSubscriptionsTable(Base):
 	"""Users channels subscriptions data table - with data for interacting users channels.."""
 
 	__tablename__ = 'users_channels_subscriptions'
-
-	_co = 2
 
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
@@ -66,8 +60,6 @@ class UsersChannelsSubscriptionsTable(Base):
 class UsersProfileTable(Base):
 
 	__tablename__ = 'users_profile'
-
-	_co = 3
 
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
@@ -83,8 +75,6 @@ class AppsTicketsTable(Base):
 	"""Devs apps tickets data (made by devs, view by users)."""
 
 	__tablename__ = 'apps_tickets'
-
-	_co = 4
 
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
@@ -118,8 +108,6 @@ class AppsTestersDataTable(Base):
 	"""Tickets data related with users (devs & testers - made by testers, view by devs)."""
 
 	__tablename__ = 'apps_testers_data'
-
-	_co = 5
 
 	id: Mapped[int] = mapped_column(primary_key=True)  # noqa: A003
 
