@@ -86,6 +86,7 @@ async def ticket_handle_confirm(
 	)
 
 	await callback_query.message.edit_reply_markup(reply_markup=None)
+	# TODO: Mb sending progress..
 	spam_reply = await callback_query.message.reply('Рассылка..')
 
 	# Spam to all excluding sender
@@ -97,12 +98,13 @@ async def ticket_handle_confirm(
 	# 		del users_ids[index]
 	# 		break
 
-	await spam2users(bot, ticket, users_ids=users_ids)
+	sent_count: int = await spam2users(bot, ticket, users_ids=users_ids)
 
 	del users_ids
 
 	# TODO: Cancel on-half.. & mb more spam control from dev (& user) side..
-	await spam_reply.edit_text('Готово =)')
+	# TODO: Show failed count..
+	await spam_reply.edit_text(f'Готово =)\nОтправлено: {sent_count}')
 
 	await state.clear()
 

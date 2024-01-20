@@ -1,9 +1,6 @@
-import os
-
 from aiogram_middlewares.utils import BrotliedPickleSerializer
 
 from data.config import DB_ENGINE
-from data.options.paths import WORKDIR
 from loader import dp
 from utils.misc.logging import logger
 
@@ -34,13 +31,5 @@ if __name__ == 'middlewares':
 
 	# After filters pass
 	dbm = DBMiddleware(engine=DB_ENGINE)
-
-	# FIXME: Crutch..
-	if not WORKDIR.joinpath('sqlite3.db').exists() or not os.environ.get('DEBUG_MODE'):
-		import asyncio
-
-		loop = asyncio.get_event_loop()
-		# FIXME:
-		loop.run_until_complete(dbm.db.triggers.engine_create_all())  # FIXME: Not one of the best ways..
 
 	dp.update.middleware(dbm)
