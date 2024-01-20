@@ -29,7 +29,7 @@ class UsersTable(Base):
 
 	__tablename__ = 'users'
 
-	user_id = mapped_column(BigInteger(), unique=True, primary_key=True)
+	user_id = mapped_column(BigInteger(), primary_key=True)
 	username: Mapped[Optional[str]] = mapped_column(String(32), default=None)  # min 5  # noqa: UP007
 	full_name: Mapped[opt_str] = mapped_column(String(132), default=None)
 	language_code: Mapped[opt_str] = mapped_column(String(3))
