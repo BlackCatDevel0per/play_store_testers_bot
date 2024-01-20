@@ -48,8 +48,8 @@ async def multiple_requests(
 	return sent_requests_count
 
 
-async def spam2users(bot: Bot, text: str, *, users_ids: list[int]) -> None:
-	await multiple_requests(
+async def spam2users(bot: Bot, text: str, *, users_ids: list[int]) -> int:
+	return await multiple_requests(
 		bot.send_message,
 		users_ids=users_ids, log_prefix='[Spamming]', text=text,
 	)

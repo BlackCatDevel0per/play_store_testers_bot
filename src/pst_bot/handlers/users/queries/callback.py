@@ -73,8 +73,8 @@ async def ticket_handle_confirm(
 	# TODO: Store messages chat_id+message_id pairs to dynamically update it!
 	# ticket_record: AppTicket = await db.apps.get_ticket_by({'app_url': data['app_url']})
 
-	ticket: str = (
-		f'username: {callback_query.from_user.username}'
+	ticket: str = (  # TODO: Construct it part-by-part..
+		f'username: @{callback_query.from_user.username}'
 		'\n'
 		f"Название: {data['app_name']}"
 		'\n'
@@ -84,6 +84,9 @@ async def ticket_handle_confirm(
 		'\n***\n'
 		f"Ссылка на приложение: {data['app_url']}"
 	)
+
+	await callback_query.message.edit_reply_markup(reply_markup=None)
+	spam_reply = await callback_query.message.reply('Рассылка..')
 
 	# Spam to all excluding sender
 	users_ids = await db.tg_users.get_users_ids()
@@ -96,7 +99,10 @@ async def ticket_handle_confirm(
 
 	await spam2users(bot, ticket, users_ids=users_ids)
 
-	await bot.send_message(callback_query.from_user.id, 'Готово =)')
+	del users_ids
+
+	# TODO: Cancel on-half.. & mb more spam control from dev (& user) side..
+	await spam_reply.edit_text('Готово =)')
 
 	await state.clear()
 

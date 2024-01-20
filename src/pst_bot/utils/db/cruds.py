@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from sqlalchemy import Column, func, insert, select, text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.pool import NullPool
 
 if TYPE_CHECKING:
 	# Can use dict & Mapping =)
@@ -39,8 +40,10 @@ class ComfortCRUD:
 		if engine_db_type != 'sqlite':
 			self._engine = create_async_engine(
 				engine,
-				pool_size=pool_size,
-				max_overflow=max_overflow,
+				# echo=True,
+				poolclass=NullPool,  # FIXME: Crutch~
+				# pool_size=pool_size,
+				# max_overflow=max_overflow,
 			)
 			# TODO: Warning..
 		else:
@@ -48,7 +51,10 @@ class ComfortCRUD:
 				engine,
 				# echo=True,
 			)
-		self._session_factory: AsyncSession = async_sessionmaker(self._engine)
+		self._session_factory: AsyncSession = async_sessionmaker(
+			self._engine,
+			expire_on_commit=False,
+		)
 
 
 	async def engine_create_all(self: ComfortCRUD, metadata: MetaData) -> bool:

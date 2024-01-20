@@ -1,7 +1,7 @@
 from __future__ import annotations  # noqa: I001
-import os
+# import os
 # To run on repl.it
-from background import keep_alive
+# from background import keep_alive
 
 import asyncio
 
@@ -47,7 +47,8 @@ if __name__ == '__main__':
 	# loop = asyncio.new_event_loop()
 	# asyncio.set_event_loop(loop)
 	# loop.run_until_complete(bot_start())
-	if not os.environ.get('DEBUG_MODE'):
-		keep_alive()
+
+	# if not os.environ.get('DEBUG_MODE'):
+	# 	keep_alive()
 
 	asyncio.run(bot_start())
