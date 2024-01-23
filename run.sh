@@ -9,6 +9,6 @@ if [ -d "$WORKDIR" ]; then
     # pip install -r requirements.txt
 else
     echo Running debug..
-    WORKDIR=$(pwd)
-    PYTHONPATH=src/pst_bot:. poerty run python src/pst_bot/bot.py
+    # WORKDIR=$(pwd)
+    PYTHONPATH=src/pst_bot:. poetry run python src/pst_bot/bot.py
 fi
