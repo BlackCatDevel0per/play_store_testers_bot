@@ -85,6 +85,8 @@ async def ticket_handle_confirm(
 		f"Ссылка на приложение: {data['app_url']}"
 	)
 
+	# TODO: Accepting keyboard & events with sending gmail to dev (aka ticket author)..
+
 	await callback_query.message.edit_reply_markup(reply_markup=None)
 	# TODO: Mb sending progress..
 	spam_reply = await callback_query.message.reply('Рассылка..')
