@@ -104,11 +104,11 @@ async def message_all(callback_query: CallbackQuery, bot: Bot, state: FSMContext
 		await del_ac_msg(bot, callback_query, state)
 		data = await state.get_data()
 		msg: Message = data['msg']
-		# users_ids = db.get_users_ids(no_admins=True)
+		# users_ids = db.tg_users.get_users_ids(no_admins=True)
 		users_ids = await db.tg_users.get_users_ids()
 		sended_cnt = await msg_to(msg, users_ids, logger)
 		await sending_msg.delete()
-		await msg.reply(f'Отправлено: {sended_cnt}/{await db.get_users_count(no_admins=True)} пользователям =)', reply_markup=None)
+		await msg.reply(f'Отправлено: {sended_cnt}/{await db.tg_users.get_users_count(no_admins=True)} пользователям =)', reply_markup=None)
 		await state.clear()
 	except Exception as e:
 		await msg.answer(f'### CONSOLE ERROR ###\n\n{e}')
